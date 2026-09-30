@@ -8,25 +8,15 @@
 
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
-html, body { height:100%; overflow:hidden; background:#1e0a4e; }
+html, body { height:100%; overflow:hidden; background:#eceaf3; }
 body { display:flex; justify-content:center; align-items:center;
-  font-family:-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif; color:#fff; }
+  font-family:-apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif; color:#16122b; }
 button { font-family:inherit; border:none; cursor:pointer; }
 
 #app { position:relative; width:min(100vw, 430px); height:100vh; height:100dvh; overflow:hidden;
-  background:linear-gradient(180deg,#3b0a86 0%,#5b21b6 40%,#7c3aed 70%,#a855f7 100%); }
-#app::before { content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 8%, rgba(255,255,255,.8), transparent),
-    radial-gradient(1px 1px at 68% 5%, rgba(255,255,255,.7), transparent),
-    radial-gradient(2px 2px at 85% 14%, rgba(255,255,255,.6), transparent),
-    radial-gradient(1px 1px at 30% 18%, rgba(255,255,255,.65), transparent),
-    radial-gradient(1.5px 1.5px at 50% 26%, rgba(255,255,255,.5), transparent),
-    radial-gradient(1px 1px at 8% 32%, rgba(255,255,255,.55), transparent),
-    radial-gradient(1.5px 1.5px at 92% 36%, rgba(255,255,255,.5), transparent),
-    radial-gradient(1px 1px at 40% 42%, rgba(255,255,255,.4), transparent); }
+  background:#ffffff; }
 @media (min-width:500px) {
-  #app { height:min(94dvh, 900px); border-radius:28px; box-shadow:0 24px 80px rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.12); }
+  #app { height:min(94dvh, 900px); border-radius:28px; box-shadow:0 24px 80px rgba(30,10,80,.25); border:1px solid #e2e0ea; }
 }
 
 .screen { position:absolute; inset:0; z-index:1; display:flex; flex-direction:column; }
@@ -37,20 +27,20 @@ button { font-family:inherit; border:none; cursor:pointer; }
 .home-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
 .logo { display:flex; align-items:center; gap:10px; }
 .logo-badge { width:46px; height:46px; border-radius:50%; background:radial-gradient(circle at 32% 28%, #a78bfa, #6d28d9 70%);
-  border:2px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; font-size:22px; }
-.logo h1 { font-size:24px; font-weight:800; letter-spacing:2px; text-shadow:0 2px 8px rgba(0,0,0,.3); }
-.logo small { display:block; font-size:11px; font-weight:400; opacity:.75; letter-spacing:1px; }
-.home-sub { font-size:13px; opacity:.75; margin:8px 2px 14px; }
+  border:2px solid #ddd6fe; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.logo h1 { font-size:24px; font-weight:800; letter-spacing:2px; color:#16122b; }
+.logo small { display:block; font-size:11px; font-weight:400; opacity:.55; letter-spacing:1px; }
+.home-sub { font-size:13px; color:#6b7280; margin:8px 2px 14px; }
 .song-list { display:flex; flex-direction:column; gap:14px; padding-bottom:12px; }
-.song-card { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.10);
-  border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:12px 12px; backdrop-filter:blur(6px); }
-.song-rank { font-size:20px; font-weight:800; opacity:.55; width:22px; text-align:center; flex:none; }
+.song-card { display:flex; align-items:center; gap:12px; background:#f8f7fc;
+  border:1px solid #e6e3ef; border-radius:16px; padding:12px 12px; box-shadow:0 2px 8px rgba(30,10,80,.05); }
+.song-rank { font-size:20px; font-weight:800; opacity:.4; width:22px; text-align:center; flex:none; }
 .song-cover { width:56px; height:56px; border-radius:12px; flex:none; display:flex; align-items:center; justify-content:center;
   font-size:26px; background:linear-gradient(135deg,#312e81,#6d28d9); box-shadow:inset 0 0 0 1px rgba(255,255,255,.18); }
 .song-info { flex:1; min-width:0; }
-.song-info h3 { font-size:17px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.song-info p { font-size:12px; opacity:.7; margin-top:2px; }
-.song-best { font-size:12px; color:#fcd34d; margin-top:4px; }
+.song-info h3 { font-size:17px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#16122b; }
+.song-info p { font-size:12px; color:#6b7280; margin-top:2px; }
+.song-best { font-size:12px; color:#d97706; font-weight:600; margin-top:4px; }
 .hot-tag { display:inline-block; font-size:10px; font-weight:700; background:#ef4444; border-radius:4px; padding:1px 6px; margin-left:6px; vertical-align:2px; }
 .btn-play { flex:none; background:#171717; color:#fff; font-size:16px; font-weight:700;
   padding:14px 22px; border-radius:10px; box-shadow:0 4px 0 #000; }
@@ -59,55 +49,53 @@ button { font-family:inherit; border:none; cursor:pointer; }
 /* ---------- 开始界面 ---------- */
 #screen-start { align-items:center; justify-content:center; text-align:center; padding:24px; }
 .back-btn { position:absolute; top:max(16px, env(safe-area-inset-top)); left:16px; width:42px; height:42px;
-  border-radius:50%; background:rgba(0,0,0,.35); color:#fff; font-size:18px; z-index:2; border:1px solid rgba(255,255,255,.2); }
-.start-song { font-size:30px; font-weight:800; text-shadow:0 3px 12px rgba(0,0,0,.35); }
-.start-composer { font-size:15px; opacity:.8; margin-top:8px; }
-.start-best { font-size:17px; color:#fcd34d; font-weight:700; margin-top:16px; }
+  border-radius:50%; background:#f3f4f6; color:#16122b; font-size:18px; z-index:2; border:1px solid #e5e7eb; }
+.start-song { font-size:30px; font-weight:800; color:#16122b; }
+.start-composer { font-size:15px; color:#6b7280; margin-top:8px; }
+.start-best { font-size:17px; color:#d97706; font-weight:700; margin-top:16px; }
 .big-tile { margin-top:36px; width:148px; height:216px; background:#141414; border-radius:18px;
   color:#fff; font-size:34px; font-weight:800; letter-spacing:6px; writing-mode:vertical-rl; text-orientation:upright;
-  display:flex; align-items:center; justify-content:center; box-shadow:0 10px 30px rgba(0,0,0,.5), inset 0 -6px 0 rgba(255,255,255,.06); }
+  display:flex; align-items:center; justify-content:center; box-shadow:0 10px 30px rgba(0,0,0,.28), inset 0 -6px 0 rgba(255,255,255,.06); }
 .big-tile:active { transform:scale(.96); }
-.start-hint { margin-top:26px; font-size:12px; opacity:.6; }
+.start-hint { margin-top:26px; font-size:12px; color:#9ca3af; }
 
 /* ---------- 游戏界面 ---------- */
 #screen-game { z-index:2; }
-#playfield { position:absolute; inset:0; overflow:hidden; background:linear-gradient(180deg,
-  rgba(66,20,140,.25), rgba(140,80,230,.18) 55%, rgba(200,150,255,.22)); }
-.lane-line { position:absolute; top:0; bottom:0; width:1px; background:rgba(255,255,255,.35); z-index:1; pointer-events:none; }
-.judge-line { position:absolute; left:0; right:0; bottom:0; height:4px; background:rgba(255,255,255,.85); z-index:3; pointer-events:none;
-  box-shadow:0 0 12px rgba(255,255,255,.7); }
+#playfield { position:absolute; inset:0; overflow:hidden; background:#ffffff; }
+.lane-line { position:absolute; top:0; bottom:0; width:1px; background:#e5e7eb; z-index:1; pointer-events:none; }
+.judge-line { position:absolute; left:0; right:0; bottom:0; height:4px; background:#16122b; z-index:3; pointer-events:none; }
 .block { position:absolute; width:25%; background:linear-gradient(180deg,#1c1c1c,#0a0a0a);
   border-radius:8px; z-index:2; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
 .block.hit { animation:blockPop .14s ease-out forwards; }
-@keyframes blockPop { to { transform:scale(1.12); opacity:0; } }
+@keyframes blockPop { to { transform:scale(1.05); opacity:0; } }
 
 .hud { position:absolute; top:0; left:0; right:0; z-index:5; pointer-events:none;
   padding:max(12px, env(safe-area-inset-top)) 14px 8px; display:flex; align-items:center; justify-content:center; }
-#score { font-size:42px; font-weight:800; text-shadow:0 3px 10px rgba(0,0,0,.45); font-variant-numeric:tabular-nums; }
+#score { font-size:42px; font-weight:800; color:#16122b; font-variant-numeric:tabular-nums; }
 .hud-btn { position:absolute; right:14px; top:max(14px, env(safe-area-inset-top)); width:38px; height:38px;
-  border-radius:50%; background:rgba(0,0,0,.35); color:#fff; font-size:16px; pointer-events:auto; z-index:6;
-  border:1px solid rgba(255,255,255,.2); display:flex; align-items:center; justify-content:center; }
+  border-radius:50%; background:#f3f4f6; color:#16122b; font-size:16px; pointer-events:auto; z-index:6;
+  border:1px solid #e5e7eb; display:flex; align-items:center; justify-content:center; }
 
 .fx-layer { position:absolute; inset:0; z-index:6; pointer-events:none; overflow:hidden; }
-.cool { position:absolute; font-size:26px; font-weight:800; color:#7df9ff; letter-spacing:2px;
-  text-shadow:0 0 14px rgba(0,255,255,.85), 0 2px 4px rgba(0,0,0,.4);
+.cool { position:absolute; font-size:26px; font-weight:800; color:#2563eb; letter-spacing:2px;
+  text-shadow:0 0 14px rgba(37,99,235,.55), 0 2px 4px rgba(255,255,255,.9);
   animation:coolUp .6s ease-out forwards; transform:translate(-50%,0); }
 @keyframes coolUp { 0% { opacity:0; transform:translate(-50%,10px) scale(.7); }
   25% { opacity:1; transform:translate(-50%,0) scale(1.1); }
   100% { opacity:0; transform:translate(-50%,-46px) scale(1); } }
-.spark { position:absolute; width:8px; height:8px; background:#fff; border-radius:2px;
+.spark { position:absolute; width:8px; height:8px; background:#16122b; border-radius:2px;
   animation:sparkFly .45s ease-out forwards; }
 @keyframes sparkFly { to { transform:translate(var(--dx), var(--dy)) rotate(180deg); opacity:0; } }
 
 /* ---------- 结算 ---------- */
-#overlay-gameover { position:absolute; inset:0; z-index:10; background:rgba(20,5,50,.62);
+#overlay-gameover { position:absolute; inset:0; z-index:10; background:rgba(15,10,30,.45);
   backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; }
-.go-card { width:82%; background:linear-gradient(180deg,#5b21b6,#7c3aed); border:1px solid rgba(255,255,255,.25);
-  border-radius:22px; padding:28px 22px 24px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5); }
-.go-card h2 { font-size:26px; font-weight:800; letter-spacing:4px; }
-.go-score { font-size:56px; font-weight:800; color:#fcd34d; margin:10px 0 2px; font-variant-numeric:tabular-nums; }
-.go-label { font-size:13px; opacity:.75; }
-.go-best { font-size:15px; margin-top:10px; opacity:.9; }
+.go-card { width:82%; background:#ffffff; border:1px solid #e6e3ef;
+  border-radius:22px; padding:28px 22px 24px; text-align:center; box-shadow:0 20px 60px rgba(20,10,50,.28); }
+.go-card h2 { font-size:26px; font-weight:800; letter-spacing:4px; color:#16122b; }
+.go-score { font-size:56px; font-weight:800; color:#d97706; margin:10px 0 2px; font-variant-numeric:tabular-nums; }
+.go-label { font-size:13px; color:#6b7280; }
+.go-best { font-size:15px; margin-top:10px; color:#16122b; }
 .go-record { display:inline-block; margin-top:10px; background:#f59e0b; color:#3b1d00; font-size:13px;
   font-weight:800; padding:4px 14px; border-radius:999px; letter-spacing:1px;
   animation:recordPop .5s ease-out; }
@@ -116,8 +104,8 @@ button { font-family:inherit; border:none; cursor:pointer; }
 .go-actions .primary { background:#141414; color:#fff; font-size:17px; font-weight:700; padding:14px; border-radius:12px;
   box-shadow:0 4px 0 #000; }
 .go-actions .primary:active { transform:translateY(2px); box-shadow:0 2px 0 #000; }
-.go-actions .ghost { background:rgba(255,255,255,.14); color:#fff; font-size:15px; padding:12px; border-radius:12px;
-  border:1px solid rgba(255,255,255,.25); }
+.go-actions .ghost { background:#f3f4f6; color:#16122b; font-size:15px; padding:12px; border-radius:12px;
+  border:1px solid #e5e7eb; }
 </style>
 </head>
 <body>
@@ -204,10 +192,11 @@ const SONGS = [
 
 /* ================= 全局状态 ================= */
 const LANES = 4;
-const FALL_BASE_MS = 2500;      // 初始一屏下落时长
+const FALL_BASE_MS = 2000;      // 初始一屏下落时长（比之前更快）
 const TIER_STEP = 0.15;         // 每档 +15%
 const MAX_TIER = 8;             // 方块速度封顶 8 档
 const MUSIC_FACTOR_CAP = 1.5;   // 音乐倍速封顶
+const GAP_MIN = 14;             // 同轨道相邻方块最小竖向间隙（防重叠）
 
 const $ = id => document.getElementById(id);
 const screens = { home:$('screen-home'), start:$('screen-start'), game:$('screen-game') };
@@ -344,7 +333,7 @@ function startGame(){
   updateDifficulty();
   showScreen('game');                       // 先显示，再测量布局尺寸
   playfieldH = $('playfield').clientHeight;
-  blockH = Math.max(110, Math.round(playfieldH * 0.16));
+  blockH = Math.max(220, Math.round(playfieldH * 0.32));   // 块高翻倍
   playing = true;
   $('overlay-gameover').classList.add('hidden');
   nextSpawnTime = ac.currentTime + 0.5;
@@ -365,20 +354,48 @@ function tick(now){
     nextSpawnTime += spawnIntervalSec();
   }
 
-  /* 下落 & 触底判定（每块锁定生成时的速度，升档不影响在途方块，避免瞬移误杀） */
+  /* 下落 */
   const dist = playfieldH;                    // 从刚出顶到触底的行程
-  for(let i = blocks.length - 1; i >= 0; i--){
-    const b = blocks[i];
+  for(const b of blocks){
+    if(b.dead) continue;
     b.elapsed += dt;
     b.y = -b.bh + (b.elapsed / b.duration) * dist;
     b.el.style.top = b.y + 'px';
+  }
+
+  /* 同轨道防重叠：从最下方块往上钳制，保证上下交界留有间隙（淡出中的块不移动） */
+  for(let l = 0; l < LANES; l++){
+    const lb = blocks.filter(b => b.lane === l).sort((a, b) => b.y - a.y); // y 降序：最下在前
+    for(let i = 1; i < lb.length; i++){
+      const lower = lb[i - 1], upper = lb[i];
+      if(upper.dead) continue;
+      const limit = lower.y - upper.bh - GAP_MIN;
+      if(upper.y > limit){ upper.y = limit; upper.el.style.top = upper.y + 'px'; }
+    }
+  }
+
+  /* 触底判定 */
+  for(const b of blocks){
+    if(b.dead) continue;
     if(b.y + b.bh >= playfieldH - 2){ gameOver(); return; }
   }
   rafId = requestAnimationFrame(tick);
 }
 
 function spawnBlock(){
-  const lane = Math.floor(Math.random() * LANES);
+  /* 只选与现有方块不重叠的轨道；全部被占则本拍跳过 */
+  const cand = [];
+  for(let l = 0; l < LANES; l++){
+    let minY = null;
+    for(const b of blocks){
+      if(b.lane !== l) continue;
+      if(minY === null || b.y < minY) minY = b.y;
+    }
+    if(minY === null || minY >= GAP_MIN) cand.push(l);
+  }
+  if(!cand.length) return false;
+
+  const lane = cand[Math.floor(Math.random() * cand.length)];
   const el = document.createElement('div');
   el.className = 'block';
   el.style.left = (lane * 25) + '%';
@@ -386,6 +403,7 @@ function spawnBlock(){
   el.style.top = (-blockH) + 'px';
   $('playfield').insertBefore(el, $('fxLayer'));
   blocks.push({ el, lane, y:-blockH, elapsed:0, bh:blockH, duration:fallDuration });
+  return true;
 }
 
 /* ---------- 点击判定 ---------- */
@@ -399,14 +417,18 @@ $('playfield').addEventListener('pointerdown', e => {
   /* 命中该轨道中“最低”的可见方块 */
   let hit = null;
   for(const b of blocks){
-    if(b.lane !== lane) continue;
+    if(b.dead || b.lane !== lane) continue;
     if(y >= b.y && y <= b.y + b.bh){ if(!hit || b.y > hit.y) hit = b; }
   }
   if(hit){
-    const i = blocks.indexOf(hit);
-    blocks.splice(i, 1);
+    /* 标记淡出：动画结束前仍参与防重叠计算，避免新块撞上消除中的旧块 */
+    hit.dead = true;
     hit.el.classList.add('hit');
-    setTimeout(() => hit.el.remove(), 160);
+    setTimeout(() => {
+      hit.el.remove();
+      const i = blocks.indexOf(hit);
+      if(i >= 0) blocks.splice(i, 1);
+    }, 160);
     score++;
     $('score').textContent = score;
     updateDifficulty();
