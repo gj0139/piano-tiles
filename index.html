@@ -65,9 +65,10 @@ button { font-family:inherit; border:none; cursor:pointer; }
 #playfield { position:absolute; inset:0; overflow:hidden; background:#ffffff; }
 .lane-line { position:absolute; top:0; bottom:0; width:1px; background:#e5e7eb; z-index:1; pointer-events:none; }
 .judge-line { position:absolute; left:0; right:0; bottom:0; height:4px; background:#16122b; z-index:3; pointer-events:none; }
-.block { position:absolute; width:25%; background:linear-gradient(180deg,#1c1c1c,#0a0a0a);
-  border-radius:8px; z-index:2; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
-.block.hit { animation:blockPop .14s ease-out forwards; }
+.block { position:absolute; width:25%; z-index:2; will-change:transform; }
+.tile { width:100%; height:100%; background:linear-gradient(180deg,#1c1c1c,#0a0a0a);
+  border-radius:8px; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+.block.hit .tile { animation:blockPop .14s ease-out forwards; }
 @keyframes blockPop { to { transform:scale(1.02); opacity:0; } }
 
 .hud { position:absolute; top:0; left:0; right:0; z-index:5; pointer-events:none;
@@ -248,6 +249,11 @@ function renderHome(){
 
 function openStart(song){
   currentSong = song;
+  /* mp3 提前到选歌界面就开始预载，进游戏时多半已缓冲好 */
+  if(song.audioFile && mp3Audio.dataset.song !== song.id){
+    mp3Audio.src = song.audioFile;
+    mp3Audio.dataset.song = song.id;
+  }
   $('startSongName').textContent = song.name;
   $('startComposer').textContent = song.composer;
   $('startBest').textContent = '最高分: ' + getBest(song.id);
@@ -259,14 +265,12 @@ let ac = null, master = null, musicTimer = 0;
 let noteIdx = 0, nextNoteTime = 0, nextSpawnTime = 0;
 let usingMp3 = false;
 
-/* 真实音频播放器：循环播放，随分数改 playbackRate（默认保音高） */
+/* 真实音频播放器：循环播放，随分数改 playbackRate（关闭保音高：提速升调、零解码开销） */
 const mp3Audio = new Audio();
 mp3Audio.preload = 'auto';
 mp3Audio.loop = true;
 mp3Audio.volume = 0.8;
-
-/* 游戏事件时钟：mp3 用媒体时钟（播放加速→节拍自动变密），合成用音频上下文时钟 */
-const gameClock = () => usingMp3 ? mp3Audio.currentTime : ac.currentTime;
+mp3Audio.preservePitch = false;
 
 function ensureAudio(){
   if(!ac){
@@ -351,8 +355,9 @@ function updateDifficulty(){
 function spawnIntervalSec(){
   // 音乐倍速封顶后，改为半拍生成（只加密度）
   const beats = speedFactor > MUSIC_FACTOR_CAP ? 0.5 : 1;
-  /* mp3：返回媒体时间的拍长——播放越快，媒体时钟走得越快，实际生成间隔自动同步缩短 */
-  if(usingMp3) return (60 / currentSong.bpm) * beats;
+  /* mp3 也用墙钟拍长 = (60/BPM) / 播放倍速：
+     与媒体时钟数学等价，但音频未就绪/被拦截时方块照常生成，不会整场冻结 */
+  if(usingMp3) return (60 / currentSong.bpm) / Math.min(speedFactor, MUSIC_FACTOR_CAP) * beats;
   return beatSec() * beats;
 }
 
@@ -370,8 +375,8 @@ function startGame(){
   blockH = Math.max(220, Math.round(playfieldH * 0.32));   // 块高翻倍
   playing = true;
   $('overlay-gameover').classList.add('hidden');
-  startMusic();                             // 先启动音乐（确定时钟通道）
-  nextSpawnTime = gameClock() + 0.5;
+  startMusic();                             // 先启动音乐
+  nextSpawnTime = ac.currentTime + 0.5;     // 生成时钟恒为墙钟：音频卡住/被拦也照常出块
   lastFrame = performance.now();
   cancelAnimationFrame(rafId);
   rafId = requestAnimationFrame(tick);
@@ -383,7 +388,7 @@ function tick(now){
   lastFrame = now;
 
   /* 生成方块（按拍，轨道随机）：仅当新块竖向区间与全屏任何已有块都不重叠时生成 */
-  while(gameClock() >= nextSpawnTime){
+  while(ac.currentTime >= nextSpawnTime){
     spawnBlock();
     nextSpawnTime += spawnIntervalSec();
   }
@@ -394,7 +399,7 @@ function tick(now){
     if(b.dead) continue;
     b.elapsed += dt;
     b.y = -b.bh + (b.elapsed / b.duration) * dist;
-    b.el.style.top = b.y + 'px';
+    applyPos(b);
   }
 
   /* 全局防重叠：按 y 排序后，从最下块往上钳制，保证任意两块竖向区间错开（淡出中的块不动） */
@@ -408,7 +413,7 @@ function tick(now){
          前方块被点掉后从原地平滑继续，而不是瞬间跳到自然位置（30 分后升档追赶的卡顿源） */
       upper.y = limit;
       upper.elapsed = (limit + upper.bh) / dist * upper.duration;
-      upper.el.style.top = upper.y + 'px';
+      applyPos(upper);
     }
   }
 
@@ -430,15 +435,25 @@ function spawnBlock(){
   el.className = 'block';
   el.style.left = (lane * 25) + '%';
   el.style.height = blockH + 'px';
-  el.style.top = (-blockH) + 'px';
+  el.style.top = (-blockH) + 'px';           // 布局位置固定，逐帧只改 transform（不触发布局）
+  const tile = document.createElement('div');
+  tile.className = 'tile';
+  el.appendChild(tile);
   $('playfield').insertBefore(el, $('fxLayer'));
   blocks.push({ el, lane, y:-blockH, elapsed:0, bh:blockH, duration:fallDuration });
   return true;
 }
 
+/* 用 transform 移动：外层 top 固定在 -bh，位移量 = y + bh */
+function applyPos(b){
+  b.el.style.transform = 'translate3d(0,' + Math.round(b.y + b.bh) + 'px,0)';
+}
+
 /* ---------- 点击判定 ---------- */
 $('playfield').addEventListener('pointerdown', e => {
   if(!playing) return;
+  /* 音频若被浏览器策略拦截或缓冲失败，任意一次游戏内点击都重试播放 */
+  if(usingMp3 && mp3Audio.paused) mp3Audio.play().catch(() => {});
   const rect = $('playfield').getBoundingClientRect();
   const x = e.clientX - rect.left, y = e.clientY - rect.top;
   if(x < 0 || x > rect.width) return;
@@ -555,6 +570,9 @@ window.__pt = () => ({
     rate: mp3Audio.playbackRate,
     paused: mp3Audio.paused,
     dur: isFinite(mp3Audio.duration) ? +mp3Audio.duration.toFixed(1) : null,
+    rs: mp3Audio.readyState,
+    ns: mp3Audio.networkState,
+    err: mp3Audio.error ? mp3Audio.error.code : null,
   } : null,
   blocks: blocks.map(b => ({ y: Math.round(b.y), e: Math.round(b.elapsed) })),
 });
