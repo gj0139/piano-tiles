@@ -196,7 +196,7 @@ const FALL_BASE_MS = 2000;      // 初始一屏下落时长（比之前更快）
 const TIER_STEP = 0.15;         // 每档 +15%
 const MAX_TIER = 8;             // 方块速度封顶 8 档
 const MUSIC_FACTOR_CAP = 1.5;   // 音乐倍速封顶
-const GAP_MIN = 14;             // 同轨道相邻方块最小竖向间隙（防重叠）
+const GAP_MIN = 14;             // 全局竖向最小间隙：任意两块（跨轨道）区间不得相交
 
 const $ = id => document.getElementById(id);
 const screens = { home:$('screen-home'), start:$('screen-start'), game:$('screen-game') };
@@ -348,7 +348,7 @@ function tick(now){
   const dt = Math.min(now - lastFrame, 80);   // 切后台保护，钳制最大步长
   lastFrame = now;
 
-  /* 生成方块（按拍，轨道随机） */
+  /* 生成方块（按拍，轨道随机）：仅当新块竖向区间与全屏任何已有块都不重叠时生成 */
   while(ac.currentTime >= nextSpawnTime){
     spawnBlock();
     nextSpawnTime += spawnIntervalSec();
@@ -363,15 +363,13 @@ function tick(now){
     b.el.style.top = b.y + 'px';
   }
 
-  /* 同轨道防重叠：从最下方块往上钳制，保证上下交界留有间隙（淡出中的块不移动） */
-  for(let l = 0; l < LANES; l++){
-    const lb = blocks.filter(b => b.lane === l).sort((a, b) => b.y - a.y); // y 降序：最下在前
-    for(let i = 1; i < lb.length; i++){
-      const lower = lb[i - 1], upper = lb[i];
-      if(upper.dead) continue;
-      const limit = lower.y - upper.bh - GAP_MIN;
-      if(upper.y > limit){ upper.y = limit; upper.el.style.top = upper.y + 'px'; }
-    }
+  /* 全局防重叠：按 y 排序后，从最下块往上钳制，保证任意两块竖向区间错开（淡出中的块不动） */
+  const lb = [...blocks].sort((a, b) => b.y - a.y);   // y 降序：最下在前
+  for(let i = 1; i < lb.length; i++){
+    const lower = lb[i - 1], upper = lb[i];
+    if(upper.dead) continue;
+    const limit = lower.y - upper.bh - GAP_MIN;
+    if(upper.y > limit){ upper.y = limit; upper.el.style.top = upper.y + 'px'; }
   }
 
   /* 触底判定 */
@@ -383,19 +381,11 @@ function tick(now){
 }
 
 function spawnBlock(){
-  /* 只选与现有方块不重叠的轨道；全部被占则本拍跳过 */
-  const cand = [];
-  for(let l = 0; l < LANES; l++){
-    let minY = null;
-    for(const b of blocks){
-      if(b.lane !== l) continue;
-      if(minY === null || b.y < minY) minY = b.y;
-    }
-    if(minY === null || minY >= GAP_MIN) cand.push(l);
+  /* 新块占据 [-bh, 0]；任何已有块的顶部低于 GAP_MIN 都会与之相交 → 本拍跳过 */
+  for(const b of blocks){
+    if(b.y < GAP_MIN) return false;
   }
-  if(!cand.length) return false;
-
-  const lane = cand[Math.floor(Math.random() * cand.length)];
+  const lane = Math.floor(Math.random() * LANES);
   const el = document.createElement('div');
   el.className = 'block';
   el.style.left = (lane * 25) + '%';
