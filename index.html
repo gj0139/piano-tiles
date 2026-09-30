@@ -42,6 +42,7 @@ button { font-family:inherit; border:none; cursor:pointer; }
 .song-info p { font-size:12px; color:#6b7280; margin-top:2px; }
 .song-best { font-size:12px; color:#d97706; font-weight:600; margin-top:4px; }
 .hot-tag { display:inline-block; font-size:10px; font-weight:700; background:#ef4444; border-radius:4px; padding:1px 6px; margin-left:6px; vertical-align:2px; }
+.mp3-tag { display:inline-block; font-size:10px; font-weight:700; background:#10b981; color:#fff; border-radius:4px; padding:1px 6px; margin-left:6px; vertical-align:2px; }
 .btn-play { flex:none; background:#171717; color:#fff; font-size:16px; font-weight:700;
   padding:14px 22px; border-radius:10px; box-shadow:0 4px 0 #000; }
 .btn-play:active { transform:translateY(2px); box-shadow:0 2px 0 #000; }
@@ -67,7 +68,7 @@ button { font-family:inherit; border:none; cursor:pointer; }
 .block { position:absolute; width:25%; background:linear-gradient(180deg,#1c1c1c,#0a0a0a);
   border-radius:8px; z-index:2; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
 .block.hit { animation:blockPop .14s ease-out forwards; }
-@keyframes blockPop { to { transform:scale(1.05); opacity:0; } }
+@keyframes blockPop { to { transform:scale(1.02); opacity:0; } }
 
 .hud { position:absolute; top:0; left:0; right:0; z-index:5; pointer-events:none;
   padding:max(12px, env(safe-area-inset-top)) 14px 8px; display:flex; align-items:center; justify-content:center; }
@@ -188,6 +189,9 @@ const SONGS = [
       [64,1],[64,1],[65,1],[67,1],[67,1],[65,1],[64,1],[62,1],
       [60,1],[60,1],[62,1],[64,1],[62,1.5],[60,.5],[60,2],
     ] },
+  /* 真实音频曲目：走 <audio> 播放，BPM 由音频分析得出 */
+  { id:'medals', name:'勋章 (Live)', composer:'鹿晗', icon:'🎤', bpm:87.9,
+    audioFile:'鹿晗+-+勋章+（Medals）(Live).mp3' },
 ];
 
 /* ================= 全局状态 ================= */
@@ -196,7 +200,7 @@ const FALL_BASE_MS = 2000;      // 初始一屏下落时长（比之前更快）
 const TIER_STEP = 0.15;         // 每档 +15%
 const MAX_TIER = 8;             // 方块速度封顶 8 档
 const MUSIC_FACTOR_CAP = 1.5;   // 音乐倍速封顶
-const GAP_MIN = 14;             // 全局竖向最小间隙：任意两块（跨轨道）区间不得相交
+const GAP_MIN = 6;              // 全局竖向最小间隙：任意两块（跨轨道）区间不得相交
 
 const $ = id => document.getElementById(id);
 const screens = { home:$('screen-home'), start:$('screen-start'), game:$('screen-game') };
@@ -232,8 +236,8 @@ function renderHome(){
     card.innerHTML =
       `<div class="song-rank">${i+1}</div>` +
       `<div class="song-cover">${s.icon}</div>` +
-      `<div class="song-info"><h3>${s.name}${i===0?'<span class="hot-tag">HOT</span>':''}</h3>` +
-      `<p>${s.composer} · ${s.bpm} BPM</p>` +
+      `<div class="song-info"><h3>${s.name}${i===0?'<span class="hot-tag">HOT</span>':''}${s.audioFile?'<span class="mp3-tag">MP3</span>':''}</h3>` +
+      `<p>${s.composer} · ${Math.round(s.bpm)} BPM</p>` +
       `<div class="song-best">最高分: ${getBest(s.id)}</div></div>` +
       `<button class="btn-play">开始</button>`;
     card.querySelector('.btn-play').addEventListener('click', () => openStart(s));
@@ -250,9 +254,19 @@ function openStart(song){
   showScreen('start');
 }
 
-/* ================= 音频合成 ================= */
+/* ================= 音频（合成 + 真实 mp3 双通道） ================= */
 let ac = null, master = null, musicTimer = 0;
 let noteIdx = 0, nextNoteTime = 0, nextSpawnTime = 0;
+let usingMp3 = false;
+
+/* 真实音频播放器：循环播放，随分数改 playbackRate（默认保音高） */
+const mp3Audio = new Audio();
+mp3Audio.preload = 'auto';
+mp3Audio.loop = true;
+mp3Audio.volume = 0.8;
+
+/* 游戏事件时钟：mp3 用媒体时钟（播放加速→节拍自动变密），合成用音频上下文时钟 */
+const gameClock = () => usingMp3 ? mp3Audio.currentTime : ac.currentTime;
 
 function ensureAudio(){
   if(!ac){
@@ -293,15 +307,31 @@ function beatSec(){ return 60 / musicBpm(); }
 
 function startMusic(){
   stopMusic();
-  noteIdx = 0;
-  nextNoteTime = ac.currentTime + 0.08;
-  musicTimer = setInterval(scheduleMusic, 40);
-  scheduleMusic();
+  usingMp3 = !!currentSong.audioFile;
+  if(usingMp3){
+    if(mp3Audio.dataset.song !== currentSong.id){
+      mp3Audio.src = currentSong.audioFile;
+      mp3Audio.dataset.song = currentSong.id;
+    }
+    mp3Audio.currentTime = 0;
+    mp3Audio.playbackRate = Math.min(speedFactor, MUSIC_FACTOR_CAP);
+    mp3Audio.play().catch(() => {});
+  } else {
+    noteIdx = 0;
+    nextNoteTime = ac.currentTime + 0.08;
+    musicTimer = setInterval(scheduleMusic, 40);
+    scheduleMusic();
+  }
 }
-function stopMusic(){ if(musicTimer){ clearInterval(musicTimer); musicTimer = 0; } }
+function stopMusic(){
+  if(musicTimer){ clearInterval(musicTimer); musicTimer = 0; }
+  if(!mp3Audio.paused) mp3Audio.pause();
+}
 
 function scheduleMusic(){
   const notes = currentSong.notes;
+  /* 主线程若曾卡顿，跳过积压音符而不是瞬间补发（避免和弦爆音） */
+  if(nextNoteTime < ac.currentTime) nextNoteTime = ac.currentTime;
   while(nextNoteTime < ac.currentTime + 0.18){
     const [m, d] = notes[noteIdx % notes.length];
     const dur = d * beatSec();
@@ -316,10 +346,14 @@ function tierOf(sc){ return Math.min(Math.floor(sc / 10), MAX_TIER); }
 function updateDifficulty(){
   speedFactor = Math.pow(1 + TIER_STEP, tierOf(score));
   fallDuration = FALL_BASE_MS / speedFactor;
+  if(usingMp3) mp3Audio.playbackRate = Math.min(speedFactor, MUSIC_FACTOR_CAP);
 }
 function spawnIntervalSec(){
   // 音乐倍速封顶后，改为半拍生成（只加密度）
-  return beatSec() * (speedFactor > MUSIC_FACTOR_CAP ? 0.5 : 1);
+  const beats = speedFactor > MUSIC_FACTOR_CAP ? 0.5 : 1;
+  /* mp3：返回媒体时间的拍长——播放越快，媒体时钟走得越快，实际生成间隔自动同步缩短 */
+  if(usingMp3) return (60 / currentSong.bpm) * beats;
+  return beatSec() * beats;
 }
 
 /* ================= 游戏流程 ================= */
@@ -336,8 +370,8 @@ function startGame(){
   blockH = Math.max(220, Math.round(playfieldH * 0.32));   // 块高翻倍
   playing = true;
   $('overlay-gameover').classList.add('hidden');
-  nextSpawnTime = ac.currentTime + 0.5;
-  startMusic();
+  startMusic();                             // 先启动音乐（确定时钟通道）
+  nextSpawnTime = gameClock() + 0.5;
   lastFrame = performance.now();
   cancelAnimationFrame(rafId);
   rafId = requestAnimationFrame(tick);
@@ -349,7 +383,7 @@ function tick(now){
   lastFrame = now;
 
   /* 生成方块（按拍，轨道随机）：仅当新块竖向区间与全屏任何已有块都不重叠时生成 */
-  while(ac.currentTime >= nextSpawnTime){
+  while(gameClock() >= nextSpawnTime){
     spawnBlock();
     nextSpawnTime += spawnIntervalSec();
   }
@@ -369,7 +403,13 @@ function tick(now){
     const lower = lb[i - 1], upper = lb[i];
     if(upper.dead) continue;
     const limit = lower.y - upper.bh - GAP_MIN;
-    if(upper.y > limit){ upper.y = limit; upper.el.style.top = upper.y + 'px'; }
+    if(upper.y > limit){
+      /* 同步 elapsed：被钳住时以“当前受限位置”为新起点，
+         前方块被点掉后从原地平滑继续，而不是瞬间跳到自然位置（30 分后升档追赶的卡顿源） */
+      upper.y = limit;
+      upper.elapsed = (limit + upper.bh) / dist * upper.duration;
+      upper.el.style.top = upper.y + 'px';
+    }
   }
 
   /* 触底判定 */
@@ -509,6 +549,13 @@ window.__pt = () => ({
   nextSpawnTime,
   fallDuration: Math.round(fallDuration),
   speedFactor: +speedFactor.toFixed(3),
+  usingMp3,
+  mp3: usingMp3 ? {
+    t: +mp3Audio.currentTime.toFixed(2),
+    rate: mp3Audio.playbackRate,
+    paused: mp3Audio.paused,
+    dur: isFinite(mp3Audio.duration) ? +mp3Audio.duration.toFixed(1) : null,
+  } : null,
   blocks: blocks.map(b => ({ y: Math.round(b.y), e: Math.round(b.elapsed) })),
 });
 </script>
